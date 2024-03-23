@@ -8,7 +8,7 @@ import os
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from PIL import Image
-
+# buid from https://learn.deeplearning.ai/courses/diffusion-models/lesson/8/summary
 
 class ResidualConvBlock(nn.Module):
     def __init__(
