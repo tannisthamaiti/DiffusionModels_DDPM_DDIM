@@ -169,9 +169,10 @@ class Unet(nn.Module):
         temb2 = self.timeembed2(t).view(-1, self.n_feat, 1, 1)
         #print(f"down1: {down1.shape}")
         up1 = self.up0(hiddenvec)
-        cemb1= torch.empty(32, 512, 1, 1).normal_().to(device)
-        cemb2= torch.empty(32, 256, 1, 1).normal_().to(device)
+        cemb1= torch.empty(batch_size, 512, 1, 1).normal_().to(device)
+        cemb2= torch.empty(batch_size, 256, 1, 1).normal_().to(device)
         #down1: torch.Size([32, 256, 64, 64])
+        print(up1.shape, down2.shape, cemb1.shape, temb1.shape)
         up2 = self.up1(cemb1*up1+temb1,down2)
   
         up3 = self.up2(cemb2*up2 + temb2, down1)
@@ -245,19 +246,7 @@ class Unet(nn.Module):
 
 
 
-# hyperparameters
-# lr = 1e-5
-# beta_1, beta_2 = 0.9, 0.999
-# weight_decay = (1e-2,)
-# epsilon = 1e-08
 
-# optimizer = tf.keras.optimizers.experimental.AdamW(
-#     learning_rate=lr,
-#     weight_decay=weight_decay,
-#     beta_1=beta_1,
-#     beta_2=beta_2,
-#     epsilon=epsilon,
-# )
 
 # diffusion hyperparameters
 timesteps = 500
@@ -274,7 +263,7 @@ save_dir = 'weights/'
 # training hyperparameters
 batch_size = 32
 n_epoch = 500
-lrate=1e-4
+lrate=1e-5
 
 # construct DDPM noise schedule
 b_t = (beta2 - beta1) * torch.linspace(0, 1, timesteps + 1, device=device) + beta1
@@ -302,8 +291,9 @@ def load_checkpoint(model, optimizer, filename):
     epoch = checkpoint['epoch']
     return model,epoch,optimizer
 
-
-nn_model.load_state_dict(torch.load(f"weights/lr0.001/model_backbone_116.pth", map_location=device))
+#load from checkpoint
+nn_model.load_state_dict(torch.load(f"weights/lr1e-4/model_backbone_100.pth", map_location=device))
+optim.load_state_dict(torch.load(f"weights/lr1e-4/model_backbone_optimizer100.pth", map_location=device))
 # set into train mode
 nn_model.train()
 train_loss_epochs=[]
@@ -319,8 +309,8 @@ for ep in range(n_epoch): # modified epoch
         optim.zero_grad()
         
         x = x.float().to(device)
-        if x.size(0)!=32:
-            new_size = 32 - x.size(0)
+        if x.size(0)!=batch_size:
+            new_size = batch_size - x.size(0)
             padding = torch.zeros(new_size, 3, 128, 128, device=device)
             x= torch.cat((x, padding), dim=0)
             
